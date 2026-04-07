@@ -129,7 +129,7 @@ Each step, the agent receives:
 
 ```bash
 # 1. Clone the repo
-git clone https://huggingface.co/spaces/your-space/email-triage-env
+git clone https://huggingface.co/spaces/MohdAliHF/email-triage-env
 cd email-triage-env
 
 # 2. Install dependencies
