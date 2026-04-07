@@ -1,0 +1,149 @@
+name: email-triage-env
+version: "1.0.0"
+description: >
+  A real-world OpenEnv environment for email triage. An AI agent processes
+  a queue of incoming emails and must classify, route, and respond to them
+  correctly. Tasks range from binary spam detection (easy) to composing
+  contextually appropriate replies (hard). Designed to evaluate language
+  model agents on practical workplace email handling.
+
+author: "Team AI Alchemists"
+license: MIT
+
+tags:
+  - openenv
+  - email
+  - nlp
+  - real-world
+  - triage
+  - classification
+  - routing
+  - language-model
+
+tasks:
+  - name: spam-detection
+    description: >
+      Classify each email as 'spam' or 'not_spam'. The agent must distinguish
+      promotional scams, phishing attempts, and irrelevant bulk mail from
+      legitimate work emails.
+    difficulty: easy
+    num_emails: 10
+    score_range: [0.0, 1.0]
+    action_type: classify
+
+  - name: email-router
+    description: >
+      Assign each work email an urgency level (low/medium/high/critical) and
+      route it to the correct department (engineering/sales/support/hr/billing/general).
+      Partial credit is awarded for adjacent urgency predictions.
+    difficulty: medium
+    num_emails: 10
+    score_range: [0.0, 1.0]
+    action_type: route
+
+  - name: email-resolver
+    description: >
+      The hardest task: the agent must correctly triage the email (urgency +
+      department) AND compose a professional, contextually relevant reply.
+      Replies are graded on length, keyword relevance, professional tone,
+      and coherence.
+    difficulty: hard
+    num_emails: 5
+    score_range: [0.0, 1.0]
+    action_type: resolve
+
+observation_space:
+  type: dict
+  fields:
+    email_id:
+      type: string
+      description: Unique identifier for the email
+    subject:
+      type: string
+      description: Email subject line
+    body:
+      type: string
+      description: Full email body text
+    sender:
+      type: string
+      description: Sender's email address
+    timestamp:
+      type: string
+      description: When the email was received (YYYY-MM-DD HH:MM:SS)
+    task_name:
+      type: string
+      description: Which task is currently running
+    step_number:
+      type: integer
+      description: Current step (1-indexed)
+    total_emails:
+      type: integer
+      description: Total emails in this episode
+    episode_done:
+      type: boolean
+      description: Whether this is the last email in the episode
+
+action_space:
+  type: dict
+  fields:
+    action_type:
+      type: string
+      enum: [classify, route, resolve, skip]
+      description: >
+        classify = spam-detection task |
+        route = email-router task |
+        resolve = email-resolver task |
+        skip = no action (zero reward)
+    label:
+      type: string
+      enum: [spam, not_spam]
+      required_for: spam-detection
+    urgency:
+      type: string
+      enum: [low, medium, high, critical]
+      required_for: [email-router, email-resolver]
+    department:
+      type: string
+      enum: [engineering, sales, support, hr, billing, general]
+      required_for: [email-router, email-resolver]
+    reply_text:
+      type: string
+      required_for: email-resolver
+      description: Draft reply to the email
+
+reward:
+  type: float
+  range: [0.0, 1.0]
+  description: >
+    Per-step reward. Averaged across all steps to produce episode score.
+    Partial credit is awarded wherever possible.
+  breakdown:
+    spam-detection:
+      classification: 1.0
+    email-router:
+      department: 0.60
+      urgency: 0.40
+    email-resolver:
+      department: 0.24   # 40% of routing component
+      urgency: 0.16      # 40% of routing component
+      reply_length: 0.10
+      keyword_relevance: 0.25
+      professional_tone: 0.15
+      coherence: 0.10
+
+endpoints:
+  reset: POST /reset
+  step: POST /step
+  state: GET /state
+  tasks: GET /tasks
+  grader: GET /grader
+  baseline: POST /baseline
+  health: GET /health
+
+runtime:
+  port: 7860
+  framework: fastapi
+  python: "3.11"
+  inference_timeout_minutes: 20
+  max_vcpu: 2
+  max_memory_gb: 8
