@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "email-triage-env"
+version = "1.0.0"
+description = "OpenEnv environment for real-world email triage"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.115.0",
+    "uvicorn[standard]==0.30.6",
+    "pydantic==2.8.2",
+    "openai==1.45.0",
+    "pyyaml==6.0.2",
+    "httpx==0.27.2",
+]
+
+[project.metadata]
+environment = "email-triage-env"
+tags = ["openenv", "email", "nlp", "real-world"]
+
+[tool.openenv]
+name = "email-triage-env"
+version = "1.0.0"
+entrypoint = "app:app"
+port = 7860
+tasks = ["spam-detection", "email-router", "email-resolver"]
