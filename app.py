@@ -76,9 +76,6 @@ def get_env() -> EmailTriageEnv:
 # Request / Response models for HTTP layer
 # ─────────────────────────────────────────────────────────────────────────────
 
-class ResetRequest(BaseModel):
-    task_name: str = "spam-detection"
-
 
 class StepResponse(BaseModel):
     observation: Optional[EmailObservation]
@@ -116,24 +113,24 @@ def health():
 
 # ── /reset ────────────────────────────────────────────────────────────────────
 
+class ResetRequest(BaseModel):
+    task_name: str = "spam-detection"
+
+
 @app.post("/reset", response_model=EmailObservation, summary="Start a new episode")
-def reset(request: ResetRequest):
+def reset(request: Optional[ResetRequest] = None):
     """
     Initialize or restart the environment for a specific task.
-    Returns the first email observation.
-
-    task_name options:
-      - spam-detection  (easy)
-      - email-router    (medium)
-      - email-resolver  (hard)
+    Body is optional — defaults to spam-detection if not provided.
     """
     global _env
-    if request.task_name not in VALID_TASKS:
+    task_name = request.task_name if request else "spam-detection"
+    if task_name not in VALID_TASKS:
         raise HTTPException(
             status_code=422,
-            detail=f"Unknown task '{request.task_name}'. Valid: {VALID_TASKS}",
+            detail=f"Unknown task '{task_name}'. Valid: {VALID_TASKS}",
         )
-    _env = EmailTriageEnv(task_name=request.task_name)
+    _env = EmailTriageEnv(task_name=task_name)
     obs = _env.reset()
     return obs
 
